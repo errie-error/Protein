@@ -1,0 +1,27 @@
+gene: TP53
+uniprot_id: P04637
+models:
+  esm2: models/facebook_esm2_t33_650M_UR50D
+  saprot: models/westlake-repl_SaProt_650M_AF2
+structure:
+  chain_id: A
+  domain_start: 94
+  domain_end: 292
+  plddt_mask_threshold: 70.0
+urls:
+  clinvar_variant_summary: https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz
+  uniprot_fasta: https://rest.uniprot.org/uniprotkb/P04637.fasta
+  alphafold_pdb: https://alphafold.ebi.ac.uk/files/AF-P04637-F1-model_v6.pdb
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  results_dir: results
+filenames:
+  clinvar_variant_summary: clinvar_variant_summary.txt.gz
+  reference_fasta: P04637.fasta
+  alphafold_pdb: AF-P04637-F1-model_v6.pdb
+  cleaned_dataset: tp53_clinvar_clean.csv
+  saprot_sequences: tp53_saprot_sequences.json
+  zero_shot_scores: tp53_zero_shot_scores.csv
+  zero_shot_metrics: tp53_zero_shot_metrics.json
+  linear_probe_metrics: tp53_linear_probe_metrics.json
