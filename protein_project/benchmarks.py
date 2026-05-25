@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, average_precision_score, precision_recall_fscore_support, roc_auc_score, roc_curve
@@ -30,12 +31,129 @@ def compute_binary_metrics(labels: pd.Series, scores: pd.Series, threshold: floa
     }
 
 
+def _bootstrap_metric_interval(
+    labels: pd.Series,
+    scores: pd.Series,
+    metric_name: str,
+    n_bootstrap: int = 2000,
+    seed: int = 0,
+) -> list[float]:
+    labels_array = np.asarray(labels)
+    scores_array = np.asarray(scores)
+    if len(labels_array) == 0 or len(np.unique(labels_array)) < 2:
+        return [float("nan"), float("nan")]
+
+    rng = np.random.default_rng(seed)
+    values: list[float] = []
+    for _ in range(n_bootstrap):
+        indices = rng.integers(0, len(labels_array), size=len(labels_array))
+        sampled_labels = labels_array[indices]
+        if len(np.unique(sampled_labels)) < 2:
+            continue
+        sampled_scores = scores_array[indices]
+        if metric_name == "roc_auc":
+            values.append(float(roc_auc_score(sampled_labels, sampled_scores)))
+        elif metric_name == "average_precision":
+            values.append(float(average_precision_score(sampled_labels, sampled_scores)))
+        else:
+            raise ValueError(f"Unsupported metric for bootstrap interval: {metric_name}")
+
+    if not values:
+        return [float("nan"), float("nan")]
+    return [float(np.percentile(values, 2.5)), float(np.percentile(values, 97.5))]
+
+
+def _bootstrap_metric_difference_interval(
+    labels: pd.Series,
+    left_scores: pd.Series,
+    right_scores: pd.Series,
+    metric_name: str,
+    n_bootstrap: int = 2000,
+    seed: int = 0,
+) -> list[float]:
+    labels_array = np.asarray(labels)
+    left_array = np.asarray(left_scores)
+    right_array = np.asarray(right_scores)
+    if len(labels_array) == 0 or len(np.unique(labels_array)) < 2:
+        return [float("nan"), float("nan")]
+
+    rng = np.random.default_rng(seed)
+    values: list[float] = []
+    for _ in range(n_bootstrap):
+        indices = rng.integers(0, len(labels_array), size=len(labels_array))
+        sampled_labels = labels_array[indices]
+        if len(np.unique(sampled_labels)) < 2:
+            continue
+        sampled_left = left_array[indices]
+        sampled_right = right_array[indices]
+        if metric_name == "roc_auc":
+            left_value = roc_auc_score(sampled_labels, sampled_left)
+            right_value = roc_auc_score(sampled_labels, sampled_right)
+        elif metric_name == "average_precision":
+            left_value = average_precision_score(sampled_labels, sampled_left)
+            right_value = average_precision_score(sampled_labels, sampled_right)
+        else:
+            raise ValueError(f"Unsupported metric for bootstrap interval: {metric_name}")
+        values.append(float(left_value - right_value))
+
+    if not values:
+        return [float("nan"), float("nan")]
+    return [float(np.percentile(values, 2.5)), float(np.percentile(values, 97.5))]
+
+
+def add_simple_baselines(dataframe: pd.DataFrame) -> pd.DataFrame:
+    result = dataframe.copy()
+    if "plddt" in result.columns and "plddt_score" not in result.columns:
+        result["plddt_score"] = result["plddt"].astype(float)
+    if "position" in result.columns and "region_score" not in result.columns:
+        # Region-only baseline: the structured TP53 core (94-312) is scored above the termini.
+        result["region_score"] = result["position"].between(94, 312).astype(float)
+    return result
+
+
 def summarize_zero_shot(dataframe: pd.DataFrame, score_columns: list[str]) -> dict[str, dict[str, float]]:
-    return {
-        score_column: compute_binary_metrics(dataframe["label"], dataframe[score_column], threshold=0.0)
-        for score_column in score_columns
-        if score_column in dataframe.columns
-    }
+    summary: dict[str, Any] = {}
+    labels = dataframe["label"]
+    for score_column in score_columns:
+        if score_column not in dataframe.columns:
+            continue
+        threshold = 0.0 if score_column != "plddt_score" else 70.0
+        metrics = compute_binary_metrics(labels, dataframe[score_column], threshold=threshold)
+        metrics["roc_auc_ci"] = _bootstrap_metric_interval(labels, dataframe[score_column], "roc_auc")
+        metrics["average_precision_ci"] = _bootstrap_metric_interval(labels, dataframe[score_column], "average_precision")
+        summary[score_column] = metrics
+
+    pairwise_differences: dict[str, Any] = {}
+    pairs = [
+        ("saprot_full_score", "esm2_score"),
+        ("saprot_masked_score", "saprot_full_score"),
+        ("saprot_masked_score", "esm2_score"),
+    ]
+    for left_column, right_column in pairs:
+        if left_column not in dataframe.columns or right_column not in dataframe.columns:
+            continue
+        pairwise_differences[f"{left_column}_minus_{right_column}"] = {
+            "roc_auc_diff": float(summary[left_column]["roc_auc"] - summary[right_column]["roc_auc"]),
+            "roc_auc_diff_ci": _bootstrap_metric_difference_interval(
+                labels,
+                dataframe[left_column],
+                dataframe[right_column],
+                "roc_auc",
+            ),
+            "average_precision_diff": float(
+                summary[left_column]["average_precision"] - summary[right_column]["average_precision"]
+            ),
+            "average_precision_diff_ci": _bootstrap_metric_difference_interval(
+                labels,
+                dataframe[left_column],
+                dataframe[right_column],
+                "average_precision",
+            ),
+        }
+
+    if pairwise_differences:
+        summary["pairwise_differences"] = pairwise_differences
+    return summary
 
 
 def save_json(payload: dict[str, Any], path: str | Path) -> Path:

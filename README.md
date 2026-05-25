@@ -1,6 +1,6 @@
 # TP53 ClinVar Mutation Effect Project
 
-这个仓库实现了 `project.md` 对应的最小可运行版本，目标是围绕 `TP53` 做三件事：
+这个仓库实现了 `project.md` 对应的最小可运行版本，目标是围绕全长 `TP53` 做三件事：
 
 - 清洗 `ClinVar` 的高置信 missense 变异
 - 计算 `ESM-2` 与 `SaProt` 的 zero-shot 突变效应分数

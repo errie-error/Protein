@@ -7,7 +7,7 @@ structure:
   chain_id: A
   domain_start: 1
   domain_end: 393
-  plddt_mask_threshold: 70.0
+  plddt_mask_threshold: 80.0
 urls:
   clinvar_variant_summary: https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz
   uniprot_fasta: https://rest.uniprot.org/uniprotkb/P04637.fasta
@@ -20,8 +20,8 @@ filenames:
   clinvar_variant_summary: clinvar_variant_summary.txt.gz
   reference_fasta: P04637.fasta
   alphafold_pdb: AF-P04637-F1-model_v6.pdb
-  cleaned_dataset: tp53_clinvar_clean.csv
-  saprot_sequences: tp53_saprot_sequences.json
-  zero_shot_scores: tp53_zero_shot_scores.csv
-  zero_shot_metrics: tp53_zero_shot_metrics.json
-  linear_probe_metrics: tp53_linear_probe_metrics.json
+  cleaned_dataset: tp53_plddt80_clinvar_clean.csv
+  saprot_sequences: tp53_plddt80_saprot_sequences.json
+  zero_shot_scores: tp53_plddt80_zero_shot_scores.csv
+  zero_shot_metrics: tp53_plddt80_zero_shot_metrics.json
+  linear_probe_metrics: tp53_plddt80_linear_probe_metrics.json

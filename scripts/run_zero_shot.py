@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from protein_project.benchmarks import plot_roc_curves, save_json, summarize_zero_shot
+from protein_project.benchmarks import add_simple_baselines, plot_roc_curves, save_json, summarize_zero_shot
 from protein_project.config import ensure_project_dirs, get_processed_path, get_raw_path, get_results_path, load_config
 from protein_project.data import read_fasta_sequence
 from protein_project.zero_shot import Esm2ZeroShotScorer, SaProtZeroShotScorer, load_saprot_sequences, score_dataframe
@@ -37,6 +37,11 @@ def main() -> None:
         scored = score_dataframe(scored, saprot, saprot_payload["full_combined_seq"], score_column="saprot_full_score", batch_size=args.saprot_batch_size)
         scored = score_dataframe(scored, saprot, saprot_payload["masked_combined_seq"], score_column="saprot_masked_score", batch_size=args.saprot_batch_size)
         score_columns.extend(["saprot_full_score", "saprot_masked_score"])
+
+    scored = add_simple_baselines(scored)
+    for baseline_column in ["plddt_score", "region_score"]:
+        if baseline_column in scored.columns:
+            score_columns.append(baseline_column)
 
     results_path = get_results_path(config, "zero_shot_scores")
     metrics_path = get_results_path(config, "zero_shot_metrics")
