@@ -9,6 +9,34 @@ from protein_project.data import read_fasta_sequence
 from protein_project.zero_shot import Esm2ZeroShotScorer, SaProtZeroShotScorer, load_saprot_sequences, score_dataframe
 
 
+def _use_domain_local_scoring(config: dict) -> bool:
+    return bool(config.get("scoring", {}).get("domain_local", False))
+
+
+def _slice_combined_sequence(combined_sequence: str, domain_start: int, domain_end: int) -> str:
+    return combined_sequence[(domain_start - 1) * 2 : domain_end * 2]
+
+
+def _localize_dataset(dataset: pd.DataFrame, domain_start: int) -> pd.DataFrame:
+    localized = dataset.copy()
+    localized["full_position"] = localized["position"]
+    localized["full_mutation"] = localized["mutation"]
+    localized["local_position"] = localized["position"] - domain_start + 1
+    localized["local_mutation"] = (
+        localized["wild_type"] + localized["local_position"].astype(str) + localized["mutant"]
+    )
+    localized["mutation"] = localized["local_mutation"]
+    return localized
+
+
+def _restore_full_coordinates(dataframe: pd.DataFrame) -> pd.DataFrame:
+    restored = dataframe.copy()
+    if {"full_position", "full_mutation"}.issubset(restored.columns):
+        restored["position"] = restored["full_position"]
+        restored["mutation"] = restored["full_mutation"]
+    return restored
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/tp53.yaml")
@@ -25,6 +53,11 @@ def main() -> None:
 
     fasta_path = get_raw_path(config, "reference_fasta")
     sequence = read_fasta_sequence(fasta_path)
+    domain_start = int(config["structure"].get("domain_start", 1))
+    domain_end = int(config["structure"].get("domain_end", len(sequence)))
+    if _use_domain_local_scoring(config):
+        sequence = sequence[domain_start - 1 : domain_end]
+        dataset = _localize_dataset(dataset, domain_start)
 
     esm2 = Esm2ZeroShotScorer(config["models"]["esm2"], device=args.device)
     scored = score_dataframe(dataset, esm2, sequence, score_column="esm2_score", batch_size=args.esm_batch_size)
@@ -33,11 +66,17 @@ def main() -> None:
     saprot_path = get_processed_path(config, "saprot_sequences")
     if Path(saprot_path).exists():
         saprot_payload = load_saprot_sequences(saprot_path)
+        full_combined_seq = saprot_payload["full_combined_seq"]
+        masked_combined_seq = saprot_payload["masked_combined_seq"]
+        if _use_domain_local_scoring(config):
+            full_combined_seq = _slice_combined_sequence(full_combined_seq, domain_start, domain_end)
+            masked_combined_seq = _slice_combined_sequence(masked_combined_seq, domain_start, domain_end)
         saprot = SaProtZeroShotScorer(config["models"]["saprot"], device=args.device)
-        scored = score_dataframe(scored, saprot, saprot_payload["full_combined_seq"], score_column="saprot_full_score", batch_size=args.saprot_batch_size)
-        scored = score_dataframe(scored, saprot, saprot_payload["masked_combined_seq"], score_column="saprot_masked_score", batch_size=args.saprot_batch_size)
+        scored = score_dataframe(scored, saprot, full_combined_seq, score_column="saprot_full_score", batch_size=args.saprot_batch_size)
+        scored = score_dataframe(scored, saprot, masked_combined_seq, score_column="saprot_masked_score", batch_size=args.saprot_batch_size)
         score_columns.extend(["saprot_full_score", "saprot_masked_score"])
 
+    scored = _restore_full_coordinates(scored)
     scored = add_simple_baselines(scored)
     for baseline_column in ["plddt_score", "region_score"]:
         if baseline_column in scored.columns:

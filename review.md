@@ -29,7 +29,7 @@ BRCA1因序列太长（1863aa）、无序区过多、计算资源风险高，暂
 策略    描述    作用
 SaProt full    基线，不masking    对照
 SaProt masked (pLDDT < 90)    你现有的方法    实验组
-SaProt random-mask-90    随机掩蔽同样比例（约18%）的token    排除"减少token数量"的解释
+SaProt random-mask-90    随机掩蔽同样比例的token    排除"减少token数量"的解释
 SaProt high-mask (pLDDT > 90)    反向：掩蔽高置信度token，保留低置信度    验证"是不是只保留低置信度信息反而更差"
 SaProt continuous-weight    用pLDDT/100作为token权重的连续加权    对比硬阈值 vs 软加权
 SaProt learned-weight    训练一个小的attention层学习每个token的权重    可学习权重是否有额外收益

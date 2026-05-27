@@ -1,0 +1,29 @@
+gene: BRCA1
+uniprot_id: P38398
+models:
+  esm2: models/facebook_esm2_t33_650M_UR50D
+  saprot: models/westlake-repl_SaProt_650M_AF2
+structure:
+  chain_id: A
+  domain_start: 1646
+  domain_end: 1859
+  plddt_mask_threshold: 90.0
+scoring:
+  domain_local: true
+urls:
+  clinvar_variant_summary: https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz
+  uniprot_fasta: https://rest.uniprot.org/uniprotkb/P38398.fasta
+  alphafold_pdb: https://alphafold.ebi.ac.uk/files/AF-P38398-F1-model_v6.pdb
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  results_dir: results
+filenames:
+  clinvar_variant_summary: clinvar_variant_summary.txt.gz
+  reference_fasta: P38398.fasta
+  alphafold_pdb: AF-P38398-F1-model_v6.pdb
+  cleaned_dataset: brca1_brct_plddt90_clinvar_clean.csv
+  saprot_sequences: brca1_brct_plddt90_saprot_sequences.json
+  zero_shot_scores: brca1_brct_plddt90_zero_shot_scores.csv
+  zero_shot_metrics: brca1_brct_plddt90_zero_shot_metrics.json
+  linear_probe_metrics: brca1_brct_plddt90_linear_probe_metrics.json
