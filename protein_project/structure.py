@@ -60,6 +60,7 @@ def build_saprot_sequences(
     structure_path: str | Path,
     chain_id: str,
     plddt_threshold: float,
+    random_seed: int = 0,
 ) -> dict[str, str]:
     structure_path = Path(structure_path)
     residue_table = extract_residue_table(structure_path, chain_id)
@@ -101,12 +102,43 @@ def build_saprot_sequences(
         masked_chars[index] = LOW_CONFIDENCE_TOKEN
     masked_structure = "".join(masked_chars)
     masked_combined = "".join(a + b.lower() for a, b in zip(sequence, masked_structure))
+
+    rng = np.random.default_rng(random_seed)
+    random_masked_chars = list(structure_sequence)
+    if low_confidence_positions:
+        random_positions = sorted(
+            rng.choice(len(structure_sequence), size=len(low_confidence_positions), replace=False).tolist()
+        )
+    else:
+        random_positions = []
+    for index in random_positions:
+        random_masked_chars[index] = LOW_CONFIDENCE_TOKEN
+    random_masked_structure = "".join(random_masked_chars)
+    random_masked_combined = "".join(a + b.lower() for a, b in zip(sequence, random_masked_structure))
+
+    high_masked_chars = list(structure_sequence)
+    high_confidence_positions = residue_table.index[residue_table["plddt"] > plddt_threshold].tolist()
+    for index in high_confidence_positions:
+        high_masked_chars[index] = LOW_CONFIDENCE_TOKEN
+    high_masked_structure = "".join(high_masked_chars)
+    high_masked_combined = "".join(a + b.lower() for a, b in zip(sequence, high_masked_structure))
     return {
         "sequence": sequence,
         "structure_sequence": structure_sequence.lower(),
         "full_combined_seq": full_combined,
         "masked_structure_sequence": masked_structure.lower(),
         "masked_combined_seq": masked_combined,
+        "random_masked_structure_sequence": random_masked_structure.lower(),
+        "random_masked_combined_seq": random_masked_combined,
+        "high_masked_structure_sequence": high_masked_structure.lower(),
+        "high_masked_combined_seq": high_masked_combined,
+        "mask_metadata": {
+            "plddt_threshold": float(plddt_threshold),
+            "random_seed": int(random_seed),
+            "low_confidence_count": len(low_confidence_positions),
+            "random_mask_count": len(random_positions),
+            "high_confidence_count": len(high_confidence_positions),
+        },
     }
 
 

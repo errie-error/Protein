@@ -128,6 +128,10 @@ def summarize_zero_shot(dataframe: pd.DataFrame, score_columns: list[str]) -> di
         ("saprot_full_score", "esm2_score"),
         ("saprot_masked_score", "saprot_full_score"),
         ("saprot_masked_score", "esm2_score"),
+        ("saprot_masked_score", "saprot_random_masked_score"),
+        ("saprot_masked_score", "saprot_high_masked_score"),
+        ("saprot_random_masked_score", "saprot_full_score"),
+        ("saprot_high_masked_score", "saprot_full_score"),
     ]
     for left_column, right_column in pairs:
         if left_column not in dataframe.columns or right_column not in dataframe.columns:

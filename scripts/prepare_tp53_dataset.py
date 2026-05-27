@@ -10,6 +10,7 @@ def main() -> None:
     parser.add_argument("--config", default="configs/tp53.yaml")
     parser.add_argument("--foldseek", default=None)
     parser.add_argument("--force-download", action="store_true")
+    parser.add_argument("--random-mask-seed", type=int, default=0)
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -59,6 +60,7 @@ def main() -> None:
             structure_path=structure_path,
             chain_id=config["structure"]["chain_id"],
             plddt_threshold=float(config["structure"]["plddt_mask_threshold"]),
+            random_seed=args.random_mask_seed,
         )
         save_saprot_sequences(saprot_sequences, get_processed_path(config, "saprot_sequences"))
 

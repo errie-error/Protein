@@ -68,13 +68,37 @@ def main() -> None:
         saprot_payload = load_saprot_sequences(saprot_path)
         full_combined_seq = saprot_payload["full_combined_seq"]
         masked_combined_seq = saprot_payload["masked_combined_seq"]
+        random_masked_combined_seq = saprot_payload.get("random_masked_combined_seq")
+        high_masked_combined_seq = saprot_payload.get("high_masked_combined_seq")
         if _use_domain_local_scoring(config):
             full_combined_seq = _slice_combined_sequence(full_combined_seq, domain_start, domain_end)
             masked_combined_seq = _slice_combined_sequence(masked_combined_seq, domain_start, domain_end)
+            if random_masked_combined_seq is not None:
+                random_masked_combined_seq = _slice_combined_sequence(random_masked_combined_seq, domain_start, domain_end)
+            if high_masked_combined_seq is not None:
+                high_masked_combined_seq = _slice_combined_sequence(high_masked_combined_seq, domain_start, domain_end)
         saprot = SaProtZeroShotScorer(config["models"]["saprot"], device=args.device)
         scored = score_dataframe(scored, saprot, full_combined_seq, score_column="saprot_full_score", batch_size=args.saprot_batch_size)
         scored = score_dataframe(scored, saprot, masked_combined_seq, score_column="saprot_masked_score", batch_size=args.saprot_batch_size)
         score_columns.extend(["saprot_full_score", "saprot_masked_score"])
+        if random_masked_combined_seq is not None:
+            scored = score_dataframe(
+                scored,
+                saprot,
+                random_masked_combined_seq,
+                score_column="saprot_random_masked_score",
+                batch_size=args.saprot_batch_size,
+            )
+            score_columns.append("saprot_random_masked_score")
+        if high_masked_combined_seq is not None:
+            scored = score_dataframe(
+                scored,
+                saprot,
+                high_masked_combined_seq,
+                score_column="saprot_high_masked_score",
+                batch_size=args.saprot_batch_size,
+            )
+            score_columns.append("saprot_high_masked_score")
 
     scored = _restore_full_coordinates(scored)
     scored = add_simple_baselines(scored)
