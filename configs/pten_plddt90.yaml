@@ -1,0 +1,27 @@
+gene: PTEN
+uniprot_id: P60484
+models:
+  esm2: models/facebook_esm2_t33_650M_UR50D
+  saprot: models/westlake-repl_SaProt_650M_AF2
+structure:
+  chain_id: A
+  domain_start: 1
+  domain_end: 403
+  plddt_mask_threshold: 90.0
+urls:
+  clinvar_variant_summary: https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz
+  uniprot_fasta: https://rest.uniprot.org/uniprotkb/P60484.fasta
+  alphafold_pdb: https://alphafold.ebi.ac.uk/files/AF-P60484-F1-model_v6.pdb
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  results_dir: results
+filenames:
+  clinvar_variant_summary: clinvar_variant_summary.txt.gz
+  reference_fasta: P60484.fasta
+  alphafold_pdb: AF-P60484-F1-model_v6.pdb
+  cleaned_dataset: pten_plddt90_clinvar_clean.csv
+  saprot_sequences: pten_plddt90_saprot_sequences.json
+  zero_shot_scores: pten_plddt90_zero_shot_scores.csv
+  zero_shot_metrics: pten_plddt90_zero_shot_metrics.json
+  linear_probe_metrics: pten_plddt90_linear_probe_metrics.json

@@ -22,7 +22,7 @@ def main() -> None:
     metrics, prediction_df = run_spatial_linear_probe(dataframe, preferred)
 
     metrics_path = get_results_path(config, "linear_probe_metrics")
-    predictions_path = metrics_path.with_name("tp53_linear_probe_predictions.csv")
+    predictions_path = metrics_path.with_name(f"{metrics_path.stem.replace('_metrics', '')}_predictions.csv")
     save_json(metrics, metrics_path)
     prediction_df.to_csv(predictions_path, index=False)
 

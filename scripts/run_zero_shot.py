@@ -45,7 +45,7 @@ def main() -> None:
 
     results_path = get_results_path(config, "zero_shot_scores")
     metrics_path = get_results_path(config, "zero_shot_metrics")
-    roc_path = results_path.with_name("tp53_zero_shot_roc.png")
+    roc_path = results_path.with_name(f"{results_path.stem}_roc.png")
 
     scored.to_csv(results_path, index=False)
     metrics = summarize_zero_shot(scored, score_columns)

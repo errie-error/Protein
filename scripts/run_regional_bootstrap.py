@@ -9,11 +9,17 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from protein_project.benchmarks import compute_binary_metrics, save_json
 
 
-REGIONS = [
+DEFAULT_REGIONS = [
     ("n_terminal_1_93", 1, 93),
     ("structured_core_94_312", 94, 312),
     ("c_terminal_313_393", 313, 393),
 ]
+
+
+def parse_region(raw_region: str) -> tuple[str, int, int]:
+    name, bounds = raw_region.split(":", maxsplit=1)
+    start, end = bounds.split("-", maxsplit=1)
+    return name, int(start), int(end)
 
 
 def bootstrap_difference_ci(
@@ -112,6 +118,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--scores", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--region",
+        action="append",
+        default=None,
+        help="Region as name:start-end. May be passed multiple times.",
+    )
     parser.add_argument("--n-bootstrap", type=int, default=5000)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
@@ -123,7 +135,8 @@ def main() -> None:
         "regions": {},
     }
     rows: list[dict[str, Any]] = []
-    for region_name, start, end in REGIONS:
+    regions = [parse_region(region) for region in args.region] if args.region else DEFAULT_REGIONS
+    for region_name, start, end in regions:
         region_df = dataframe.loc[dataframe["position"].between(start, end)].copy()
         region_summary = summarize_region(region_df, args.n_bootstrap, args.seed)
         results["regions"][region_name] = region_summary
